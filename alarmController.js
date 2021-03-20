@@ -24,10 +24,5 @@ const AddAlarms = async (docRef, input) => {
 }
 
 module.exports = {
-    createNewSession: createNewSession,
-    updateSession:updateSession,
-    updateTopics:updateTopics,
-    updateLiveData:updateLiveData,
-    updateHistory:updateHistory,
     AddAlarms:AddAlarms
 }

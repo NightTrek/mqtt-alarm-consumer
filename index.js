@@ -20,18 +20,8 @@ const db = admin.firestore();
 
 //get a list of devices from firebase
 
-let deviceSubs = {
-    AgroOffice1: {
-        live: {},
-        dataHistory: {}
-    },
-}
-let GlobalTopicSubscriptionList = {
-    ///"AgroOffice1/data/Live": 1241516
-}
 
-let prevLiveData = {};
-let prev30minHistory = {};
+
 
 mqtt.createMqttClient().then((mqttClient) => {
 
@@ -83,14 +73,11 @@ mqtt.createMqttClient().then((mqttClient) => {
         //update firestore with the new data.
         switch (topicParts[2]) {
             case "alarm":
-                let alarmRef = db.collection('Rooms').doc(topicParts[0]).collection('Alarms').doc();
-                S.AddAlarms(alarmRef, {unixTime: msg.msg[0].unixTime, activeAlarms: msg.msg});
+                console.log('adding Alarms data');
+                //check for existing active alarms
+                db.collection('Alarms').where('room', '==', topicParts[0])
+                
                 break;
-        }
-
-        if (GlobalTopicSubscriptionList[msg.topic] < Math.floor(Date.now() / 1000)) {
-            console.log('removing expired sub')
-            mqtt.removeSubs(mqttClient, msg.topic)
         }
         console.log(msg);
     })

@@ -1,0 +1,15 @@
+[Unit]
+Description=mqtt-consumer
+After=network.target
+[Service]
+ExecStart=/home/MQTT-Livedata-consumer/index.js
+Restart=always
+User=nobody
+# Use 'nogroup' group for Ubuntu/Debian
+# use 'nobody' group for Fedora
+Group=nogroup
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+WorkingDirectory=/home/MQTT-Livedata-consumer
+[Install]
+WantedBy=multi-user.target

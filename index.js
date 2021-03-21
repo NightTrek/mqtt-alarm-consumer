@@ -67,7 +67,7 @@ mqtt.createMqttClient().then((mqttClient) => {
         console.log(`Example app listening at http://localhost:${port}`)
     })
     //mqtt message handler
-    mqtt.clientMsgHandler(mqttClient, (msg) => {
+    mqtt.clientMsgHandler(mqttClient, async (msg) => {
         //parse the topic and upload to the correct firebase document
         let topicParts = msg.topic.split('/')
         //update firestore with the new data.
@@ -75,8 +75,62 @@ mqtt.createMqttClient().then((mqttClient) => {
             case "alarm":
                 console.log('adding Alarms data');
                 //check for existing active alarms
-                db.collection('Alarms').where('room', '==', topicParts[0])
-                
+                let msgAlarms = msg.msg;
+                if(msg.msg.length === 0){
+                    //handle no active alarms
+                }else{
+                    //alarms have a defined length
+                    try{
+                        let activeAlarmSnapshot = await db.collection('Alarms').where('roomID', '==', topicParts[0]).where('active', '==', true).get();
+                        let roomData = await db.collection('Rooms').doc(topicParts[0]).get();
+                        let roomName;
+                        if(roomData.data()){
+                            roomName = roomData.data().name
+                        }else{
+                            roomName = "room ERROR"
+                        }
+                        let activeAlarms = {};
+                        
+                        activeAlarmSnapshot.forEach((item) => {
+                            if(item.exists){
+                                //add each active alarm to an active alarm object
+                                activeAlarms[item.data().msg] = {id:item.id, ...item.data()};
+                            }
+                        });
+                        //added ownerID test
+                        msgAlarms.forEach((alarm) => {
+                            if( !activeAlarms[alarm.msg]){
+                                db.collection('Alarms').add({
+                                    active:true,
+                                    msg:alarm.msg,
+                                    val:alarm.val,
+                                    ownerID: alarm.ownerID,
+                                    type:alarm.type,
+                                    roomID:topicParts[0],
+                                    room:roomName,
+                                    unixTime:alarm.unixTime
+                                });
+                            }else{
+                                if(activeAlarms[alarm.msg].type !== alarm.type){
+                                    db.collection('Alarms').add({
+                                        active:true,
+                                        msg:alarm.msg,
+                                        val:alarm.val,
+                                        ownerID: alarm.ownerID,
+                                        type:alarm.type,
+                                        roomID:topicParts[0],
+                                        room:roomName,
+                                        unixTime:alarm.unixTime
+                                    })
+                                }
+                            }
+                        });
+
+                    }catch(err){
+                        console.log(err)
+                        console.log('error getting active alarms for room')
+                    }
+                }
                 break;
         }
         console.log(msg);
